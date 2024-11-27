@@ -10,8 +10,8 @@ API_HASH = "abe760b5d6b33e15c676577d6ae4a06a"  # Replace with your API Hash
 BOT_TOKEN = "7902514308:AAGRWf0i1sN0hxgvVh75AlHNvcVpJ4j07HY"  # Replace with your bot token
 
 # MongoDB Configuration
-MONGO_URI = "mongodb+srv://Teamsanki:Teamsanki@cluster0.jxme6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"  # MongoDB URI (update if needed)
-DB_NAME = "Teamsanki"  # MongoDB database name
+MONGO_URI = "mongodb://localhost:27017"  # MongoDB URI (update if needed)
+DB_NAME = "music_bot"  # MongoDB database name
 
 # Initialize Pyrogram Client
 app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
