@@ -3,7 +3,6 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask import Flask, render_template
 import threading
-import os
 
 # Bot Configuration
 API_ID = "27884171"  # Replace with your API ID
@@ -13,7 +12,6 @@ BOT_TOKEN = "7902514308:AAGRWf0i1sN0hxgvVh75AlHNvcVpJ4j07HY"  # Replace with you
 # MongoDB Configuration
 MONGO_URI = "mongodb+srv://Teamsanki:Teamsanki@cluster0.jxme6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI)
-  # MongoDB URI (update if needed)
 DB_NAME = "music_bot"  # MongoDB database name
 
 # Initialize Pyrogram Client
@@ -23,8 +21,8 @@ app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client[DB_NAME]
 
-# Initialize Flask App and specify templates folder
-web_app = Flask(__name__, template_folder='templates')  # Ensure template_folder is correctly specified
+# Initialize Flask App
+web_app = Flask(__name__, template_folder='templates')
 
 @app.on_message(filters.command("play") & filters.private)
 async def play_command(client, message):
@@ -36,12 +34,20 @@ async def play_command(client, message):
         return
 
     song_name = " ".join(message.command[1:])
+    
+    # Insert song details into MongoDB and get the room_id
     room_data = {"user_id": message.from_user.id, "song_name": song_name}
     room_id = db.rooms.insert_one(room_data).inserted_id
+    
+    # Debugging: Print room_id to ensure it's being created correctly
+    print(f"Room ID generated: {room_id}")
 
+    # Generate the room link
     room_link = f"http://localhost:5000/room/{room_id}"
+    
+    # Send the raw room link directly
     await message.reply_text(
-        f"🎶 Your song is ready! Click the link below to join your room:\n\n[Join Room]({room_link})",
+        f"🎶 Your song is ready! Click the link to join your room: {room_link}",
         disable_web_page_preview=True
     )
 
@@ -50,7 +56,10 @@ def room_page(room_id):
     """
     Serves the room page to play the song based on the room ID.
     """
+    # Fetch room data from MongoDB
     room_data = db.rooms.find_one({"_id": ObjectId(room_id)})
+    
+    # If the room doesn't exist, show an error
     if not room_data:
         return "Invalid room ID or the room has expired!", 404
 
@@ -66,4 +75,4 @@ def run_flask():
 if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
     print("Bot is running... Press Ctrl+C to stop.")
-    app.run() 
+    app.run()
