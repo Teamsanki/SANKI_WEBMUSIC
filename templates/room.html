@@ -32,10 +32,18 @@
         Your browser does not support the audio element.
     </audio>
     <script>
-        const songName = "{{ song_name }}";
-        document.getElementById("song-title").textContent = `Now Playing: ${songName}`;
-        document.getElementById("audio-source").src = `https://teamsanki.github.io/SANKI_WEBMUSIC/songs/${encodeURIComponent(songName)}.mp3`;
-        document.getElementById("audio-player").load();
+        // Get the song parameter from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const songUrl = urlParams.get('song');
+
+        if (!songUrl) {
+            document.body.innerHTML = "<h1>Error: No song specified!</h1>";
+        } else {
+            // Set the song URL
+            document.getElementById("audio-source").src = decodeURIComponent(songUrl);
+            document.getElementById("song-title").textContent = "Now Playing: " + decodeURIComponent(songUrl).split('/').pop().replace('.mp3', '');
+            document.getElementById("audio-player").load();
+        }
     </script>
 </body>
 </html>
