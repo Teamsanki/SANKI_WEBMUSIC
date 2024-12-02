@@ -30,23 +30,8 @@ YDL_OPTIONS = {
     'outtmpl': f'{MUSIC_DIR}/%(title)s.%(ext)s',  # Save files in MUSIC_DIR
     'quiet': True,
     'default_search': 'ytsearch',  # Allow searching YouTube with plain text
-    'cookiefile': 'cookies.txt',  # Path to your cookies file, update as needed
+    'cookiefile': 'cookies.txt',  # Path to your cookies file
 }
-
-# Optionally, load extra configuration from a text file (e.g., proxy settings or additional options)
-def load_config_from_file(config_file):
-    with open(config_file, 'r') as file:
-        lines = file.readlines()
-        for line in lines:
-            if line.strip():  # If the line is not empty
-                try:
-                    key, value = line.split("=", 1)  # Assuming key-value pairs
-                    YDL_OPTIONS[key.strip()] = value.strip()
-                except ValueError:
-                    print(f"Skipping invalid config line: {line.strip()}")
-
-# Load extra configuration if needed (e.g., proxy settings, other options)
-load_config_from_file('yt-dlp-config.txt')  # Add the path to your custom config file here
 
 @app.on_message(filters.command("play") & filters.private)
 async def play_command(client, message):
