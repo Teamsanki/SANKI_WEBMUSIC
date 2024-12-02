@@ -1,5 +1,4 @@
 pymongo
 tgcrypto
-pyrogram==1.4.16  # or your preferred version
-yt-dlp==2024.1.2  # or the latest version
-flask==2.2.2  # or your preferred version (if you're using Flask for the web app)
+pyrogram
+flask
