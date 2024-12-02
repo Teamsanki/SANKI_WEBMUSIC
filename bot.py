@@ -1,75 +1,67 @@
 from pyrogram import Client, filters
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from flask import Flask, render_template
-import threading
+from yt_dlp import YoutubeDL
+import os
 
 # Bot Configuration
 API_ID = "27884171"  # Replace with your API ID
 API_HASH = "abe760b5d6b33e15c676577d6ae4a06a"  # Replace with your API Hash
 BOT_TOKEN = "7902514308:AAGRWf0i1sN0hxgvVh75AlHNvcVpJ4j07HY"  # Replace with your bot token
 
-# MongoDB Configuration
-MONGO_URI = "mongodb+srv://Teamsanki:Teamsanki@cluster0.jxme6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-mongo_client = MongoClient(MONGO_URI)
-db = mongo_client["music_bot"]  # MongoDB database name
+# MP3 File Hosting Directory (Local or Server Path)
+MUSIC_DIR = "hosted_music"  # Make sure this folder is accessible via your web server
+WEB_URL = "https://teamsanki.github.io/SANKI_WEBMUSIC/songs"  # Public URL for hosted MP3 files
 
 # Initialize Pyrogram Client
 app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Initialize Flask App
-web_app = Flask(__name__, template_folder="templates")
+# YouTube Downloader Options
+YDL_OPTIONS = {
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'outtmpl': f'{MUSIC_DIR}/%(title)s.%(ext)s',  # Save files in MUSIC_DIR
+    'quiet': True,
+}
+
 
 @app.on_message(filters.command("play") & filters.private)
 async def play_command(client, message):
     """
-    Handles the /play command. Stores the song in MongoDB and generates a link.
+    Handles the /play command. Fetches music from YouTube and generates a link.
     """
     if len(message.command) < 2:
-        await message.reply_text("Please provide a song name after /play command!\nExample: /play Tum Hi Ho")
+        await message.reply_text("Please provide a song name or YouTube URL after /play command!\nExample: /play Tum Hi Ho")
         return
 
-    # Get the song name from the command
-    song_name = " ".join(message.command[1:])
+    query = " ".join(message.command[1:])
+    await message.reply_text(f"🎶 Searching and downloading: {query}...")
 
-    # Insert song details into MongoDB
-    room_data = {"user_id": message.from_user.id, "song_name": song_name}
-    room_id = db.rooms.insert_one(room_data).inserted_id
+    try:
+        # Download from YouTube
+        with YoutubeDL(YDL_OPTIONS) as ydl:
+            info = ydl.extract_info(query, download=True)
+            song_title = info.get('title', 'Unknown Song')
+            file_name = f"{song_title}.mp3"
 
-    # Generate the room link
-    room_link = f"https://teamsanki.github.io/SANKI_WEBMUSIC/room/{room_id}"
+        # Generate the public URL for the song
+        song_url = f"{WEB_URL}/{file_name.replace(' ', '%20')}"
 
-    # Send the room link directly
-    await message.reply_text(
-        f"🎶 Your song is ready! Click the link to join your room: {room_link}",
-        disable_web_page_preview=True
-    )
+        # Send the playback link to the user
+        await message.reply_text(
+            f"🎶 Your song is ready! Click the link to play it:\n\n[Play Song]({song_url})",
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        await message.reply_text(f"❌ Failed to process your request. Error: {str(e)}")
 
-@web_app.route("/room/<room_id>", methods=["GET"])
-def room_page(room_id):
-    """
-    Serves the room page to play the song based on the room ID.
-    """
-    # Fetch room data from MongoDB
-    room_data = db.rooms.find_one({"_id": ObjectId(room_id)})
-
-    # If the room doesn't exist, show an error
-    if not room_data:
-        return "Invalid room ID or the room has expired!", 404
-
-    # Extract the song name from the database
-    song_name = room_data["song_name"]
-
-    # Render the room template
-    return render_template("room.html", song_name=song_name)
-
-def run_flask():
-    """
-    Run the Flask app in a separate thread.
-    """
-    web_app.run(host="0.0.0.0", port=5000)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
+    # Ensure the MUSIC_DIR exists
+    if not os.path.exists(MUSIC_DIR):
+        os.makedirs(MUSIC_DIR)
+
     print("Bot is running... Press Ctrl+C to stop.")
     app.run()
