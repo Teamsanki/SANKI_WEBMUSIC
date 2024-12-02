@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask import Flask, render_template
 import threading
+import os
 
 # Bot Configuration
 API_ID = "27884171"  # Replace with your API ID
@@ -22,8 +23,8 @@ app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client[DB_NAME]
 
-# Initialize Flask App
-web_app = Flask(__name__)
+# Initialize Flask App and specify templates folder
+web_app = Flask(__name__, template_folder='templates')  # Ensure template_folder is correctly specified
 
 @app.on_message(filters.command("play") & filters.private)
 async def play_command(client, message):
@@ -65,4 +66,4 @@ def run_flask():
 if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
     print("Bot is running... Press Ctrl+C to stop.")
-    app.run()
+    app.run() 
