@@ -11,18 +11,14 @@ BOT_TOKEN = "7902514308:AAGRWf0i1sN0hxgvVh75AlHNvcVpJ4j07HY"  # Replace with you
 
 # MongoDB Configuration
 MONGO_URI = "mongodb+srv://Teamsanki:Teamsanki@cluster0.jxme6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(MONGO_URI)
-DB_NAME = "music_bot"  # MongoDB database name
+mongo_client = MongoClient(MONGO_URI)
+db = mongo_client["music_bot"]  # MongoDB database name
 
 # Initialize Pyrogram Client
 app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Initialize MongoDB Client
-mongo_client = MongoClient(MONGO_URI)
-db = mongo_client[DB_NAME]
-
 # Initialize Flask App
-web_app = Flask(__name__, template_folder='templates')
+web_app = Flask(__name__, template_folder="templates")
 
 @app.on_message(filters.command("play") & filters.private)
 async def play_command(client, message):
@@ -33,19 +29,17 @@ async def play_command(client, message):
         await message.reply_text("Please provide a song name after /play command!\nExample: /play Tum Hi Ho")
         return
 
+    # Get the song name from the command
     song_name = " ".join(message.command[1:])
-    
-    # Insert song details into MongoDB and get the room_id
+
+    # Insert song details into MongoDB
     room_data = {"user_id": message.from_user.id, "song_name": song_name}
     room_id = db.rooms.insert_one(room_data).inserted_id
-    
-    # Debugging: Print room_id to ensure it's being created correctly
-    print(f"Room ID generated: {room_id}")
 
     # Generate the room link
-    room_link = f"http://localhost:5000/room/{room_id}"
-    
-    # Send the raw room link directly
+    room_link = f"https://teamsanki.github.io/SANKI_WEBMUSIC/room/{room_id}"
+
+    # Send the room link directly
     await message.reply_text(
         f"🎶 Your song is ready! Click the link to join your room: {room_link}",
         disable_web_page_preview=True
@@ -58,12 +52,15 @@ def room_page(room_id):
     """
     # Fetch room data from MongoDB
     room_data = db.rooms.find_one({"_id": ObjectId(room_id)})
-    
+
     # If the room doesn't exist, show an error
     if not room_data:
         return "Invalid room ID or the room has expired!", 404
 
+    # Extract the song name from the database
     song_name = room_data["song_name"]
+
+    # Render the room template
     return render_template("room.html", song_name=song_name)
 
 def run_flask():
